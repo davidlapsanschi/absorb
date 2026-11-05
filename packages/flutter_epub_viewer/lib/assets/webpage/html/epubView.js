@@ -260,12 +260,11 @@ function loadBook(data, cfi, initialXPath, manager, flow, spread, snap, allowScr
   // forwards its keydown) and from the outer page. The app does the turn so
   // page animations and position tracking stay on the one path. In scrolled
   // mode the page keys and space scroll as they would anywhere.
-  var scrolledFlow = String(flow || '').indexOf('scrolled') === 0;
   window.__keyTurn = function (e) {
     if (!e || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
     var k = e.key;
-    var forward = k === 'ArrowRight' || (!scrolledFlow && (k === 'PageDown' || k === ' ' || k === 'Spacebar'));
-    var back = k === 'ArrowLeft' || (!scrolledFlow && k === 'PageUp');
+    var forward = k === 'ArrowRight' || (!scrolledFlow() && (k === 'PageDown' || k === ' ' || k === 'Spacebar'));
+    var back = k === 'ArrowLeft' || (!scrolledFlow() && k === 'PageUp');
     if (!forward && !back) return;
     e.preventDefault();
     window.flutter_inappwebview.callHandler('keyTurn', forward ? 'next' : 'prev');

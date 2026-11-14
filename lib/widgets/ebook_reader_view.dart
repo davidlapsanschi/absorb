@@ -5576,7 +5576,7 @@ class EbookReaderViewState extends State<EbookReaderView> with WidgetsBindingObs
         // mid-sentence put them here, and going back only flipped the page
         // to and fro until the sentence ended.
         if (where == 'before' &&
-            (await _narrationHeardSpot(wc, clip, id, heard))?['visible'] == true) {
+            (await _narrationHeardSpot(wc, n, clip, id, heard))?['visible'] == true) {
           return;
         }
         _narrationTurnAt = now;
@@ -5594,7 +5594,7 @@ class EbookReaderViewState extends State<EbookReaderView> with WidgetsBindingObs
         // voice is placed in its text by time, so the page turns once the
         // part being heard is over there, instead of waiting at the last
         // line until the next sentence begins.
-        final d = await _narrationHeardSpot(wc, clip, id, heard);
+        final d = await _narrationHeardSpot(wc, n, clip, id, heard);
         if (d != null && d['visible'] == false && d['dir'] == 1) {
           _narrationTurnAt = now;
           _readAlongTurnPending = now;
@@ -5620,13 +5620,15 @@ class EbookReaderViewState extends State<EbookReaderView> with WidgetsBindingObs
   /// to place anything in, or when the page script did not answer.
   Future<Map<String, dynamic>?> _narrationHeardSpot(
     InAppWebViewController wc,
+    MediaOverlay n,
     OverlayClip clip,
     String id,
     double heard,
   ) async {
     final span = clip.end - clip.begin;
     if (span <= 1.0) return null;
-    final frac = ((heard - clip.begin) / span).clamp(0.0, 1.0);
+    // [heard] is book time; a clip's begin is in its own audio file.
+    final frac = ((heard - n.startOf(clip)) / span).clamp(0.0, 1.0);
     if (frac <= 0.05) return null;
     final raw = await wc.evaluateJavascript(
         source: 'window.__absorbMO ? __absorbMO.heard(${jsonEncode(clip.textHref)}, '

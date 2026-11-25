@@ -2025,11 +2025,14 @@ class DownloadService extends ChangeNotifier {
     }
   }
 
-  /// Keeps the timings of the read along EPUB matched to a downloaded
-  /// audiobook, so read along follows it offline.
+  /// Keeps read along timings for a downloaded audiobook that came down
+  /// without them, so read along follows it offline.
   Future<void> _keepReadAlongTimings(ApiService api, String itemId) async {
     if (api is! BookOrbitApiService) return;
-    final timings = await api.readAlongTimingsFor(itemId);
+    // A download keeps BookOrbit's own timings already; only fill in books
+    // downloaded before that, in the same order the reader asks for them.
+    if (await NarrationService.instance.hasLocalOverlay(itemId)) return;
+    final timings = await api.narrationFor(itemId) ?? await api.readAlongTimingsFor(itemId);
     if (timings == null) return;
     await NarrationService.instance.keepTimings(itemId, timings);
     debugPrint('[Download] read along timings for $itemId kept for offline');

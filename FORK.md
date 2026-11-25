@@ -2,7 +2,7 @@
 
 `absorb-dev` is our own build of [pounat/absorb](https://github.com/pounat/absorb): his code at a release we picked, plus the changes below. We don't follow his releases automatically. When David asks, we compare his new releases with this list and decide together whether to move our changes onto his newer code.
 
-Base: **1.12.1-305** (synced 2026-11-14).
+Base: **1.15.1-312** (synced 2026-11-26; before that 1.12.1-305).
 
 ## Our changes
 
@@ -22,9 +22,10 @@ Each entry: what was wrong, our commit, and how to tell whether his newer code s
 
 ### 3. Read along and Find in ebook work offline
 - **Problem:** offline read along needs timings saved on the phone, but they were saved only when the reader was opened online. Find in ebook asked only the server. A missing reader copy of a narrated EPUB was re-downloaded with all its audio (hundreds of MB).
-- **Fix:** downloading an audiobook with a matched read along also saves its timings (missed ones are caught up once per run), Find in ebook uses saved timings offline, and book details are read before re-fetching a reader copy so it comes without audio.
-- **Commit:** "Keep read along and Find in ebook working offline…" (was PR #465).
-- **Still needed?** Yes, if upstream's `download_service.dart` doesn't save narration timings with the audiobook download. Test: download an audiobook that has a read along, never open the reader, go to airplane mode, open the reader. Read along should follow.
+- **Fix:** an audiobook downloaded without timings gets them (caught up once per run), Find in ebook uses saved timings offline, and book details are read before re-fetching a reader copy so it comes without audio.
+- **Commit:** "Keep read along and Find in ebook working offline…" (was PR #465), plus "Fill in read along timings only for downloads that came without them, BookOrbit's own first" (312 sync).
+- **312 sync:** since 312 his download saves BookOrbit's own timings (`audioNarration`, `download_service.dart`). Our helper now skips a book that has timings and otherwise asks `narrationFor ?? readAlongTimingsFor`, his reader's order, so it only fills in older downloads and never replaces his.
+- **Still needed?** The catch-up for older downloads, offline Find in ebook and the audio-free reader copy: yes, unless upstream adds them. Test: airplane mode, open Find in ebook on a downloaded narrated book. It should find text.
 
 ### 4. Word-by-word read along for narrated EPUBs
 - **Problem:** with a BookOrbit read along (EPUB3 media overlay), read along lit whole sentences only, and the Word/Sentence choice was hidden for it.
@@ -43,13 +44,10 @@ Each entry: what was wrong, our commit, and how to tell whether his newer code s
 - **Problem:** after a swipe, read along pulled the page straight back, and swipes didn't save the reading position (broken since 304). In `loadBook` (epubView.js), `var scrolledFlow = …` hides the `scrolledFlow()` function. The touch setup threw before adding its touchend listener, so swipes never reached the app.
 - **Fix:** drop the variable and use the function.
 - **Commit:** "Stop read along pulling the page back after a swipe".
-- **Still needed?** Yes, while upstream's epubView.js still has `var scrolledFlow =` inside `loadBook` (it does in 305).
+- **Still needed?** Yes, while upstream's epubView.js still has `var scrolledFlow =` inside `loadBook` (it does in 312, although 310 fixed the same symptom in read along another way).
 
-### 7. Page turns mid-sentence only when the voice gets there, in every chapter
-- **Problem:** 305 turns the page mid-sentence once the voice reaches the part on the next page. But `_narrationHeardSpot` subtracted the clip's begin, which counts from the start of its own audio file. A read along EPUB has one file per chapter, so past the first chapter every sentence crossing a page turned the page as soon as it started.
-- **Fix:** measure from `n.startOf(clip)` (the clip's start in the book).
-- **Commit:** "Turn the page mid-sentence only once the voice reaches the next page, in every chapter".
-- **Still needed?** Yes, while upstream's `_narrationHeardSpot` uses `heard - clip.begin`.
+## Dropped at a sync
+- **Page turns mid-sentence in every chapter** (was #7, "Turn the page mid-sentence only once the voice reaches the next page…"): fixed by him in 310, `_narrationHeardSpot` measures from `n.startOf(clip)`. Dropped at the 312 sync.
 
 ## Considered, not built
 - **Real word timings:** BookOrbit can make a read along with "Word" granularity instead of "Sentence", giving each word its own timing from the audio. That would make word-by-word follow the narrator exactly. It needs each read along remade (hours per long book) and the reader taught to light the sentence plus the current word from word clips. Try it on a short book first.
